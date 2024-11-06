@@ -119,11 +119,22 @@ def preprocess_data(file_path, min_freq=3):
         sentences[i] = [token if token not in rare_words else '<UNK>' for token in sentence]
     
     # Remove <START> token from all sentences
-    sentences = [[token for token in sentence if token != '<START>'] for sentence in sentences]
+    # sentences = [[token for token in sentence if token != '<START>'] for sentence in sentences]
     
     # Return the processed sentences
     return sentences
 
+def tokenize_test_data(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    sentences = []
+    for line in lines:
+        tokens = line.strip().split()  # Just split the sentence into tokens
+        tokens = ['<START>'] + tokens + ['<STOP>']  # Add start and stop tokens
+        sentences.append(tokens)
+
+    return sentences
 
 # Main function to run everything
 def main():
@@ -142,9 +153,10 @@ def main():
 
 
 
-    dev_data  = preprocess_data('1b_benchmark.dev.tokens')
+    #dev_data  = preprocess_data('1b_benchmark.dev.tokens')
     # test_data  = preprocess_data('1b_benchmark.test.tokens')
-    test = preprocess_data('test.tokens')
+    test = tokenize_test_data('test.tokens')
+    print(test)
 
     # Train models
     unigram_model = UnigramModel()
@@ -159,11 +171,11 @@ def main():
     print("Unigram Perplexity on Train Set:", calculate_perplexity(unigram_model, train_data, 'unigram'))
     print("Bigram Perplexity on Train Set:", calculate_perplexity(bigram_model, train_data, 'bigram'))
     print("Trigram Perplexity on Train Set:", calculate_perplexity(trigram_model, train_data, 'trigram'))
-
+    print()
     # # Calculate perplexity for test HDTV
-    # print("Unigram Perplexity on Test Set:", calculate_perplexity(unigram_model, test, 'unigram'))
-    # print("Bigram Perplexity on Test Set:", calculate_perplexity(bigram_model, test, 'bigram'))
-    # print("Trigram Perplexity on Test Set:", calculate_perplexity(trigram_model, test, 'trigram'))
+    print("Unigram Perplexity on Test Set:", calculate_perplexity(unigram_model, test, 'unigram'))
+    print("Bigram Perplexity on Test Set:", calculate_perplexity(bigram_model, test, 'bigram'))
+    print("Trigram Perplexity on Test Set:", calculate_perplexity(trigram_model, test, 'trigram'))
 
     # DONT UNCOMMENT THESE, LETS JUST FOCUS ON THE TRAIN AND THE HDTV TEST
     # Calculate perplexity for dev set
