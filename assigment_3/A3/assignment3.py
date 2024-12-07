@@ -15,6 +15,7 @@ import keras
 import tensorflow as tf
 import numpy as np
 from keras import layers
+from keras.layers import Bidirectional
 
 
 ## Loading the "20newsgroups" dataset.
@@ -104,21 +105,22 @@ def build_rnn_model():
     """
     Build an RNN-based text classification model.
     """
-    # Input layer for sequences of vocab indices
+    # Input layer
     inputs = keras.Input(shape=(None,), dtype="int64")
 
-    # Embedding layer to map vocab indices to dense vectors
-    x = layers.Embedding(max_features, 16)(inputs)
+    # Embedding layer
+    x = layers.Embedding(max_features, embedding_dim)(inputs)
     x = layers.Dropout(0.5)(x)
 
-    # Simple RNN layer to process the sequence
-    x = layers.SimpleRNN(64, activation="tanh")(x)
+    # RNN layer with bidirectional wrapper
+    x = layers.Bidirectional(layers.SimpleRNN(64, activation="tanh"))(x)
 
-    # Fully connected layer
+    # Dropout layer
     x = layers.Dropout(0.5)(x)
+
+    # Output layer
     predictions = layers.Dense(20, activation="softmax", name="predictions")(x)
 
-    # Compile the model
     model = keras.Model(inputs, predictions)
     model.compile(
         loss="sparse_categorical_crossentropy",
@@ -127,32 +129,41 @@ def build_rnn_model():
     )
     return model
 
-def build_lstm_model():
+# Constants for LSTM model
+max_features = 20000 
+embedding_dim = 128
+sequence_length = 300
+batch_size = 64
+
+def build_bi_lstm_model():
     """
-    Build an LSTM-based text classification model.
+    Build a Bidirectional LSTM-based model for text classification.
     """
-    # Input layer for sequences of vocab indices
+    # Input layer
     inputs = keras.Input(shape=(None,), dtype="int64")
 
-    # Embedding layer to map vocab indices to dense vectors
-    x = layers.Embedding(max_features, 16)(inputs)
-    x = layers.Dropout(0.5)(x)
+    # Embedding layer
+    x = layers.Embedding(max_features, 128)(inputs)
+    x = layers.Dropout(0.3)(x) 
 
-    # LSTM layer to process the sequence (replace SimpleRNN with LSTM)
-    x = layers.LSTM(64, activation="tanh")(x)  # LSTM unit replaces SimpleRNN
+    # Bidirectional LSTM layers
+    x = layers.Bidirectional(layers.LSTM(64, activation="tanh", return_sequences=True))(x)
+    x = layers.BatchNormalization()(x)  
+    x = layers.Bidirectional(layers.LSTM(32, activation="tanh", return_sequences=False))(x)
+    x = layers.BatchNormalization()(x)
+    x = layers.Dropout(0.3)(x)
 
-    # Fully connected layer
-    x = layers.Dropout(0.5)(x)
-    predictions = layers.Dense(20, activation="softmax", name="predictions")(x)
+    # Output layer
+    predictions = layers.Dense(20, activation="softmax")(x)
 
-    # Compile the model
     model = keras.Model(inputs, predictions)
     model.compile(
         loss="sparse_categorical_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=keras.optimizers.Adam(learning_rate=1e-3),
         metrics=["accuracy"],
     )
     return model
+
 
 
 def main():
@@ -179,20 +190,21 @@ def main():
     # model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 
     # RNN
-    model = build_rnn_model()
-    model.fit(train_ds, validation_data=val_ds, epochs=20, batch_size=32)
+    # model = build_rnn_model()
+    # model.fit(train_ds, validation_data=val_ds, epochs=20, batch_size=32)
 
     # LSTM
-    model = build_lstm_model()  # LSTM model
+    model = build_bi_lstm_model()
     model.fit(train_ds, validation_data=val_ds, epochs=20, batch_size=32)
-
-
 
     """
     ## Evaluate the model on the test set or validation set.
     """
-    ## model.evaluate(test_ds)
+    print("Validation set: ")
     model.evaluate(val_ds)
+
+    print("Test Set: ")
+    model.evaluate(test_ds)
 
 
 if __name__ == "__main__":
