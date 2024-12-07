@@ -100,6 +100,60 @@ def build_model():
     )
     return model
 
+def build_rnn_model():
+    """
+    Build an RNN-based text classification model.
+    """
+    # Input layer for sequences of vocab indices
+    inputs = keras.Input(shape=(None,), dtype="int64")
+
+    # Embedding layer to map vocab indices to dense vectors
+    x = layers.Embedding(max_features, 16)(inputs)
+    x = layers.Dropout(0.5)(x)
+
+    # Simple RNN layer to process the sequence
+    x = layers.SimpleRNN(64, activation="tanh")(x)
+
+    # Fully connected layer
+    x = layers.Dropout(0.5)(x)
+    predictions = layers.Dense(20, activation="softmax", name="predictions")(x)
+
+    # Compile the model
+    model = keras.Model(inputs, predictions)
+    model.compile(
+        loss="sparse_categorical_crossentropy",
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        metrics=["accuracy"],
+    )
+    return model
+
+def build_lstm_model():
+    """
+    Build an LSTM-based text classification model.
+    """
+    # Input layer for sequences of vocab indices
+    inputs = keras.Input(shape=(None,), dtype="int64")
+
+    # Embedding layer to map vocab indices to dense vectors
+    x = layers.Embedding(max_features, 16)(inputs)
+    x = layers.Dropout(0.5)(x)
+
+    # LSTM layer to process the sequence (replace SimpleRNN with LSTM)
+    x = layers.LSTM(64, activation="tanh")(x)  # LSTM unit replaces SimpleRNN
+
+    # Fully connected layer
+    x = layers.Dropout(0.5)(x)
+    predictions = layers.Dense(20, activation="softmax", name="predictions")(x)
+
+    # Compile the model
+    model = keras.Model(inputs, predictions)
+    model.compile(
+        loss="sparse_categorical_crossentropy",
+        optimizer=keras.optimizers.Adam(learning_rate=0.001),
+        metrics=["accuracy"],
+    )
+    return model
+
 
 def main():
     raw_train_ds, raw_val_ds, raw_test_ds = load_textfiles()
@@ -118,11 +172,21 @@ def main():
     val_ds = val_ds.cache().prefetch(buffer_size=10)
     test_ds = test_ds.cache().prefetch(buffer_size=10)
 
-    model = build_model()
+    # ORIGINAL
+    # model = build_model()
+    # epochs = 10
+    # # Actually perform training.
+    # model.fit(train_ds, validation_data=val_ds, epochs=epochs)
 
-    epochs = 10
-    # Actually perform training.
-    model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+    # RNN
+    model = build_rnn_model()
+    model.fit(train_ds, validation_data=val_ds, epochs=20, batch_size=32)
+
+    # LSTM
+    model = build_lstm_model()  # LSTM model
+    model.fit(train_ds, validation_data=val_ds, epochs=20, batch_size=32)
+
+
 
     """
     ## Evaluate the model on the test set or validation set.
